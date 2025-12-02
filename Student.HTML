@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S3Ai Student App</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f3f4f6; margin: 0; display: flex; justify-content: center; height: 100vh; }
+        
+        /* Mobile Container Simulation */
+        .app-container { width: 100%; max-width: 400px; background: white; height: 100vh; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        
+        /* HEADER */
+        .app-header { background: #2563eb; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .app-header h2 { margin: 0; font-size: 18px; }
+        
+        /* CONTENT AREA */
+        .content { padding: 20px; flex: 1; overflow-y: auto; }
+
+        /* CARDS */
+        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .card h4 { margin: 0; font-size: 15px; color: #333; }
+        .tag { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .free { background: #dcfce7; color: #166534; }
+        .locked { background: #fee2e2; color: #991b1b; }
+
+        /* LOGIN SCREEN */
+        .login-screen { position: absolute; top:0; left:0; width:100%; height:100%; background:white; z-index: 10; display: flex; flex-direction: column; justify-content: center; padding: 30px; box-sizing: border-box; }
+        .input-field { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; font-size: 16px; outline: none; transition: 0.3s; }
+        .input-field:focus { border-color: #2563eb; }
+        
+        .btn { width: 100%; padding: 15px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn:active { transform: scale(0.98); }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div id="loginOverlay" class="login-screen">
+            <h1 style="color:#1e293b; text-align: center;">Welcome Back</h1>
+            <p style="text-align: center; color: #64748b; margin-bottom: 30px;">Login to access your classes</p>
+            
+            <input type="text" id="sName" class="input-field" placeholder="Full Name">
+            <input type="tel" id="sPhone" class="input-field" placeholder="Mobile Number">
+            <button class="btn" onclick="login()">Start Learning</button>
+        </div>
+
+        <div class="app-header">
+            <div>
+                <h2 id="userNameDisplay">Student</h2>
+                <span style="font-size:12px; opacity: 0.8;">Premium Batch</span>
+            </div>
+            <button onclick="logout()" style="background:transparent; border:1px solid white; color:white; padding: 5px 10px; border-radius: 4px;">Logout</button>
+        </div>
+
+        <div class="content">
+            <h3 style="color:#334155;">📺 Your Courses</h3>
+            <div id="courseFeed">
+                <p style="color:gray; text-align:center; margin-top:50px;">Loading Content...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // 1. CHECK IF LOGGED IN
+        const user = localStorage.getItem('currentUser');
+        if(user) {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('userNameDisplay').innerText = JSON.parse(user).name;
+            loadCourses();
+        }
+
+        // 2. LOGIN FUNCTION
+        function login() {
+            const name = document.getElementById('sName').value;
+            const phone = document.getElementById('sPhone').value;
+
+            if(name && phone.length >= 10) {
+                const userData = { 
+                    name: name, 
+                    phone: phone, 
+                    time: new Date().toLocaleTimeString() 
+                };
+
+                // Save Current Session
+                localStorage.setItem('currentUser', JSON.stringify(userData));
+
+                // Send to ADMIN Database (Real-time Simulation)
+                let allData = JSON.parse(localStorage.getItem('allStudents')) || [];
+                allData.push(userData);
+                localStorage.setItem('allStudents', JSON.stringify(allData));
+
+                location.reload(); // Refresh to enter
+            } else {
+                alert("Enter valid details!");
+            }
+        }
+
+        // 3. LOAD COURSES (Synced with Admin)
+        function loadCourses() {
+            const courses = JSON.parse(localStorage.getItem('appCourses')) || [];
+            const container = document.getElementById('courseFeed');
+            
+            if(courses.length === 0) {
+                container.innerHTML = "<p style='text-align:center; color:#999;'>No classes active yet.</p>";
+                return;
+            }
+
+            container.innerHTML = '';
+            courses.forEach(c => {
+                let badge = c.type === 'locked' 
+                    ? `<span class="tag locked">🔒 LOCKED</span>` 
+                    : `<span class="tag free">✅ PLAY</span>`;
+
+                container.innerHTML += `
+                    <div class="card">
+                        <div>
+                            <h4>${c.name}</h4>
+                            <small style="color:#aaa;">Uploaded: ${c.date}</small>
+                        </div>
+                        ${badge}
+                    </div>
+                `;
+            });
+        }
+
+        // 4. REAL TIME LISTENER (When Admin adds course, it appears here)
+        window.addEventListener('storage', (e) => {
+            if(e.key === 'appCourses') loadCourses();
+        });
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            location.reload();
+        }
+    </script>
+</body>
+</html>
